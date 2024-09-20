@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import platform
 import sys
-sys.path.append('CodeFormer')
+sys.path.append('PhongLee1')
 import cv2
 import torch
 import torch.nn.functional as F
@@ -52,46 +52,6 @@ dark_theme_css = """
 </style>
 """
 
-
-
-
-
-
-
-
-
-
-
-def check_serial_number():
-    """Retrieve and validate hardware serial number."""
-    serial_number = ""
-    try:
-        if platform.system() == "Windows":
-            serial_number = os.popen("wmic bios get serialnumber").read().strip().split('\n')[-1].strip()
-        elif platform.system() == "Linux":
-            serial_number = os.popen("sudo dmidecode -s system-serial-number").read().strip()
-        else:
-            raise EnvironmentError("Unsupported platform")
-
-        # Thêm "System Serial Number" vào danh sách serial hợp lệ
-        allowed_serial_numbers = [
-            "0000_0000_0000_0000_0026_B738_2E84_5585",
-            "0000_0000_0000_0000_0026_B778_5974_9F75",
-            "6479_A759_8090_4F84",
-            "WD-WX42D24HC9LP",
-            "System Serial Number"  # Thêm serial này để chấp nhận máy trả về giá trị này
-        ]
-
-        if serial_number not in allowed_serial_numbers:
-            raise PermissionError(f"Unauthorized device with serial number: {serial_number}")
-
-        print(f"Hardware serial number verified: {serial_number}")
-        return True
-    except Exception as e:
-        print(f"Error retrieving or validating serial number: {e}")
-        return False
-
-
 def open_folder():
     open_folder_path = os.path.abspath("outputs")
     if platform.system() == "Windows":
@@ -114,21 +74,17 @@ pretrain_model_url = {
     'realesrgan_x4': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
 }
 
-# Security check: only proceed if serial number is authorized
-if not check_serial_number():
-    sys.exit("Unauthorized device detected. Exiting application.")
-
 # Download weights if not already present
-if not os.path.exists('CodeFormer/weights/CodeFormer/codeformer.pth'):
-    load_file_from_url(url=pretrain_model_url['codeformer'], model_dir='CodeFormer/weights/CodeFormer', progress=True, file_name=None)
+if not os.path.exists('PhongLee1/weights/CodeFormer/codeformer.pth'):
+    load_file_from_url(url=pretrain_model_url['codeformer'], model_dir='PhongLee1/weights/CodeFormer', progress=True, file_name=None)
 if not os.path.exists('CodeFormer/weights/facelib/detection_Resnet50_Final.pth'):
-    load_file_from_url(url=pretrain_model_url['detection'], model_dir='CodeFormer/weights/facelib', progress=True, file_name=None)
+    load_file_from_url(url=pretrain_model_url['detection'], model_dir='PhongLee1/weights/facelib', progress=True, file_name=None)
 if not os.path.exists('CodeFormer/weights/facelib/parsing_parsenet.pth'):
-    load_file_from_url(url=pretrain_model_url['parsing'], model_dir='CodeFormer/weights/facelib', progress=True, file_name=None)
+    load_file_from_url(url=pretrain_model_url['parsing'], model_dir='PhongLee1/weights/facelib', progress=True, file_name=None)
 if not os.path.exists('CodeFormer/weights/realesrgan/RealESRGAN_x2plus.pth'):
-    load_file_from_url(url=pretrain_model_url['realesrgan_x2'], model_dir='CodeFormer/weights/realesrgan', progress=True, file_name=None)
+    load_file_from_url(url=pretrain_model_url['realesrgan_x2'], model_dir='PhongLee1/weights/realesrgan', progress=True, file_name=None)
 if not os.path.exists('CodeFormer/weights/realesrgan/RealESRGAN_x4plus.pth'):
-    load_file_from_url(url=pretrain_model_url['realesrgan_x4'], model_dir='CodeFormer/weights/realesrgan', progress=True, file_name=None)
+    load_file_from_url(url=pretrain_model_url['realesrgan_x4'], model_dir='PhongLee1/weights/realesrgan', progress=True, file_name=None)
 
 def imread(img_path):
     img = cv2.imread(img_path)
@@ -146,7 +102,7 @@ def set_realesrgan(upscale_factor):
         num_grow_ch=32,
         scale=upscale_factor,
     )
-    model_path = f"CodeFormer/weights/realesrgan/RealESRGAN_x{upscale_factor}plus.pth"
+    model_path = f"PhongLee1/weights/realesrgan/RealESRGAN_x{upscale_factor}plus.pth"
     upsampler = RealESRGANer(
         scale=upscale_factor,
         model_path=model_path,
@@ -166,7 +122,7 @@ codeformer_net = ARCH_REGISTRY.get("CodeFormer")(
     n_layers=9,
     connect_list=["32", "64", "128", "256"],
 ).to(device)
-ckpt_path = "CodeFormer/weights/CodeFormer/codeformer.pth"
+ckpt_path = "PhongLee1/weights/CodeFormer/codeformer.pth"
 checkpoint = torch.load(ckpt_path)["params_ema"]
 codeformer_net.load_state_dict(checkpoint)
 codeformer_net.eval()
