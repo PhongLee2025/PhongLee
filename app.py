@@ -17,7 +17,42 @@ from basicsr.archs.rrdbnet_arch import RRDBNet
 from basicsr.utils.realesrgan_utils import RealESRGANer
 from basicsr.utils.registry import ARCH_REGISTRY
 
-# CSS tùy chỉnh
+def check_serial_number():
+    """Retrieve and validate hardware serial number from a file."""
+    serial_number = ""
+    try:
+        if platform.system() == "Windows":
+            serial_number = os.popen("wmic bios get serialnumber").read().strip().split('\n')[-1].strip()
+        elif platform.system() == "Linux":
+            serial_number = os.popen("sudo dmidecode -s system-serial-number").read().strip()
+        else:
+            raise EnvironmentError("Unsupported platform")
+        
+        allowed_serial_numbers = []
+        start_reading = False
+        
+        with open("gitatributex.txt", "r") as file:
+            for line in file:
+                line = line.strip()
+                if "PH111" in line:
+                    start_reading = True
+                    continue
+                
+                if start_reading and line:
+                    allowed_serial_numbers.append(line)
+        
+        if serial_number not in allowed_serial_numbers:
+            raise PermissionError(f"Unauthorized device with serial number: {serial_number}")
+
+        print(f"Hardware serial number verified: {serial_number}")
+        return True
+    except Exception as e:
+        print(f"Error retrieving or validating serial number: {e}")
+        return False
+
+if not check_serial_number():
+    sys.exit("Unauthorized device detected. Exiting application.")
+
 dark_theme_css = """
 <style>
   body { 
@@ -25,29 +60,29 @@ dark_theme_css = """
     color: #FFFFFF; 
   }
   h1, h2, h3, h4, h5, h6, .gr-markdown { 
-    color: #FFA500 !important; /* Màu cam cho tiêu đề */
-    font-weight: bold !important; /* Tô đậm */
-    font-size: 2.5em !important; /* Kích thước lớn hơn */
+    color: #FFA500 !important; 
+    font-weight: bold !important; 
+    font-size: 2.5em !important; 
   }
   .gr-markdown p {
-    color: #FFA500 !important; /* Màu cam cho đoạn văn Markdown */
+    color: #FFA500 !important; 
   }
   .gr-button { 
     background-color: #3B3B3B; 
     color: white; 
   }
   input[type='number'], input[type='text'], textarea, .gr-textbox, .gr-slider, .gr-checkbox, .gr-file-upload {
-    background-color: #FFA500 !important; /* Màu cam */
+    background-color: #FFA500 !important; 
     color: white;
   }
   label, .label, .checkbox-label {
-    color: #FFA500 !important; /* Đảm bảo nhãn và các label chuyển sang màu cam */
+    color: #FFA500 !important;
   }
   .gradio-container {
     background-color: #1E1E1E; 
   }
   .gr-slider input[type='range'] {
-    background-color: #FFA500 !important; /* Màu cam cho thanh trượt */
+    background-color: #FFA500 !important;
   }
 </style>
 """
@@ -58,8 +93,6 @@ def open_folder():
         os.startfile(open_folder_path)
     elif platform.system() == "Linux":
         os.system(f'xdg-open "{open_folder_path}"')
-
-#os.system("pip freeze")
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -74,16 +107,15 @@ pretrain_model_url = {
     'realesrgan_x4': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
 }
 
-# Download weights if not already present
 if not os.path.exists('PhongLee1/weights/CodeFormer/codeformer.pth'):
     load_file_from_url(url=pretrain_model_url['codeformer'], model_dir='PhongLee1/weights/CodeFormer', progress=True, file_name=None)
-if not os.path.exists('CodeFormer/weights/facelib/detection_Resnet50_Final.pth'):
+if not os.path.exists('PhongLee1/weights/facelib/detection_Resnet50_Final.pth'):
     load_file_from_url(url=pretrain_model_url['detection'], model_dir='PhongLee1/weights/facelib', progress=True, file_name=None)
-if not os.path.exists('CodeFormer/weights/facelib/parsing_parsenet.pth'):
+if not os.path.exists('PhongLee1/weights/facelib/parsing_parsenet.pth'):
     load_file_from_url(url=pretrain_model_url['parsing'], model_dir='PhongLee1/weights/facelib', progress=True, file_name=None)
-if not os.path.exists('CodeFormer/weights/realesrgan/RealESRGAN_x2plus.pth'):
+if not os.path.exists('PhongLee1/weights/realesrgan/RealESRGAN_x2plus.pth'):
     load_file_from_url(url=pretrain_model_url['realesrgan_x2'], model_dir='PhongLee1/weights/realesrgan', progress=True, file_name=None)
-if not os.path.exists('CodeFormer/weights/realesrgan/RealESRGAN_x4plus.pth'):
+if not os.path.exists('PhongLee1/weights/realesrgan/RealESRGAN_x4plus.pth'):
     load_file_from_url(url=pretrain_model_url['realesrgan_x4'], model_dir='PhongLee1/weights/realesrgan', progress=True, file_name=None)
 
 def imread(img_path):
@@ -91,7 +123,6 @@ def imread(img_path):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
 
-# set enhancer with RealESRGAN based on upscale factor
 def set_realesrgan(upscale_factor):
     half = True if torch.cuda.is_available() else False
     model = RRDBNet(
@@ -130,8 +161,7 @@ codeformer_net.eval()
 os.makedirs('outputs', exist_ok=True)
 
 def inference(image, face_align, background_enhance, face_upsample, upscale, codeformer_fidelity, dont_save=False):
-    """Chạy dự đoán duy nhất trên mô hình"""
-    print('Bắt đầu xử lý')
+    print('Starting inference')
     try: 
         only_center_face = False
         draw_box = False
@@ -152,11 +182,11 @@ def inference(image, face_align, background_enhance, face_upsample, upscale, cod
         upsampler = set_realesrgan(min(upscale, 4))
 
         img = cv2.imread(str(image), cv2.IMREAD_COLOR)
-        print('\tKích thước hình ảnh:', img.shape)
+        print('Image size:', img.shape)
 
-        if upscale > 2 and max(img.shape[:2])>1000: 
+        if upscale > 2 and max(img.shape[:2]) > 1000:
             upscale = 2 
-        if max(img.shape[:2]) > 1500: 
+        if max(img.shape[:2]) > 1500:
             upscale = 1
             background_enhance = False
             face_upsample = False
@@ -180,30 +210,24 @@ def inference(image, face_align, background_enhance, face_upsample, upscale, cod
         else:
             face_helper.read_image(img)
             num_det_faces = face_helper.get_face_landmarks_5(
-            only_center_face=only_center_face, resize=640, eye_dist_threshold=5
+                only_center_face=only_center_face, resize=640, eye_dist_threshold=5
             )
             face_helper.align_warp_face()
 
         for idx, cropped_face in enumerate(face_helper.cropped_faces):
-            cropped_face_t = img2tensor(
-                cropped_face / 255.0, bgr2rgb=True, float32=True
-            )
+            cropped_face_t = img2tensor(cropped_face / 255.0, bgr2rgb=True, float32=True)
             normalize(cropped_face_t, (0.5, 0.5, 0.5), (0.5, 0.5, 0.5), inplace=True)
             cropped_face_t = cropped_face_t.unsqueeze(0).to(device)
 
             try:
                 with torch.no_grad():
-                    output = codeformer_net(
-                        cropped_face_t, w=codeformer_fidelity, adain=True
-                    )[0]
+                    output = codeformer_net(cropped_face_t, w=codeformer_fidelity, adain=True)[0]
                     restored_face = tensor2img(output, rgb2bgr=True, min_max=(-1, 1))
                 del output
                 torch.cuda.empty_cache()
             except RuntimeError as error:
-                print(f"Không thể phục hồi bằng CodeFormer: {error}")
-                restored_face = tensor2img(
-                    cropped_face_t, rgb2bgr=True, min_max=(-1, 1)
-                )
+                print(f"Error restoring face with CodeFormer: {error}")
+                restored_face = tensor2img(cropped_face_t, rgb2bgr=True, min_max=(-1, 1))
 
             restored_face = restored_face.astype("uint8")
             face_helper.add_restored_face(restored_face)
@@ -215,15 +239,9 @@ def inference(image, face_align, background_enhance, face_upsample, upscale, cod
                 bg_img = None
             face_helper.get_inverse_affine(None)
             if face_upsample and face_upsampler is not None:
-                restored_img = face_helper.paste_faces_to_input_image(
-                    upsample_img=bg_img,
-                    draw_box=draw_box,
-                    face_upsampler=face_upsampler,
-                )
+                restored_img = face_helper.paste_faces_to_input_image(upsample_img=bg_img, draw_box=draw_box, face_upsampler=face_upsampler)
             else:
-                restored_img = face_helper.paste_faces_to_input_image(
-                    upsample_img=bg_img, draw_box=draw_box
-                )
+                restored_img = face_helper.paste_faces_to_input_image(upsample_img=bg_img, draw_box=draw_box)
         else:
             restored_img = restored_face
 
@@ -233,7 +251,7 @@ def inference(image, face_align, background_enhance, face_upsample, upscale, cod
         restored_img = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
         return restored_img
     except Exception as error:
-        print('Lỗi toàn cục', error)
+        print('Global error', error)
         return None, None
 
 def save_image(restored_img):
@@ -260,13 +278,13 @@ def save_image(restored_img):
     
     imwrite(restored_img, save_path)
     
-    print(f"Hình ảnh đã lưu tại {save_path}")
+    print(f"Image saved at {save_path}")
 
 import time
 
 def batch_inference(batch_input_folder, batch_output_folder, face_align, background_enhance, face_upsample, upscale, codeformer_fidelity, progress=gr.Progress()):
     if not os.path.exists(batch_input_folder):
-        print(f"Thư mục đầu vào không tồn tại: {batch_input_folder}")
+        print(f"Input folder does not exist: {batch_input_folder}")
         return
 
     if not batch_output_folder:
@@ -294,11 +312,11 @@ def batch_inference(batch_input_folder, batch_output_folder, face_align, backgro
                     save_path = os.path.join(batch_output_folder, f"{Path(file).stem}_{j:04d}.png")
                 restored_img = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
                 imwrite(restored_img, save_path)
-                print(f"Xử lý: {image_path}")
+                print(f"Processed: {image_path}")
             else:
-                print(f"Không thể xử lý: {image_path}")
+                print(f"Failed to process: {image_path}")
         except Exception as e:
-            print(f"Lỗi xử lý {image_path}: {e}")
+            print(f"Error processing {image_path}: {e}")
         
         elapsed_time = time.time() - start_time
         processed_images = i
@@ -307,25 +325,21 @@ def batch_inference(batch_input_folder, batch_output_folder, face_align, backgro
         estimated_time_remaining = remaining_images / processing_speed if processing_speed > 0 else 0
         progress_percent = (processed_images / total_images) * 100
 
-        progress(progress_percent / 100, desc=f"Xử lý: {processed_images}/{total_images} | Tốc độ: {processing_speed:.2f} img/s | "
-                                               f"Thời gian còn lại: {estimated_time_remaining:.2f}s")
+        progress(progress_percent / 100, desc=f"Processing: {processed_images}/{total_images} | Speed: {processing_speed:.2f} img/s | Remaining: {estimated_time_remaining:.2f}s")
 
-    print("Xử lý hàng loạt đã hoàn tất.")
+    print("Batch processing complete.")
 
-title = "Phong Lee 0832 328262- Công Cụ Làm Nét Ảnh"
+title = "Phong Lee 0832 328262 - Công Cụ Làm Nét Ảnh"
 description = r"""Nhận Phục Hồi Ảnh Cũ - Chỉnh Sửa Ảnh Giá Rẻ"""
 
 def clear():
     return None, False, False, False, 2, 0.5
 
-# Khởi tạo giao diện Gradio
 with gr.Blocks() as demo:  
-    # Thêm CSS tùy chỉnh cho giao diện tối và điều chỉnh yêu cầu
     gr.HTML(dark_theme_css)
 
-    # Markdown tiêu đề, sẽ đổi màu sang cam
     gr.Markdown(
-        "## Phong Lee 0832 328262- Công Cụ Làm Nét Ảnh"
+        "## Phong Lee 0832 328262 - Công Cụ Làm Nét Ảnh"
     )
     gr.Markdown(
         "## Nhận Phục Hồi Ảnh Cũ - Chỉnh Sửa Ảnh Giá Rẻ"
@@ -356,6 +370,6 @@ with gr.Blocks() as demo:
     clear_button.click(clear, outputs=[image_input, face_align, background_enhance, face_upsample, upscale, codeformer_fidelity])
     btn_open_outputs.click(fn=open_folder)
 
-    batch_process_button.click(batch_inference, inputs=[batch_input_folder, batch_output_folder, face_align, background_enhance, face_upsample, upscale, codeformer_fidelity],outputs=[status_label],  show_progress=True, queue=True)
+    batch_process_button.click(batch_inference, inputs=[batch_input_folder, batch_output_folder, face_align, background_enhance, face_upsample, upscale, codeformer_fidelity], outputs=[status_label],  show_progress=True, queue=True)
 
 demo.launch(inbrowser=True, share=args.share)
