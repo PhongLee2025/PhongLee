@@ -329,8 +329,8 @@ def batch_inference(batch_input_folder, batch_output_folder, face_align, backgro
 
     print("Batch processing complete.")
 
-title = "Phong Lee 0832 328262 - Công Cụ Làm Nét Ảnh"
-description = r"""Nhận Phục Hồi Ảnh Cũ - Chỉnh Sửa Ảnh Giá Rẻ"""
+title = Công Cụ Làm Nét Ảnh"
+description = r"""Version 6x"""
 
 def clear():
     return None, False, False, False, 2, 0.5
@@ -339,10 +339,10 @@ with gr.Blocks() as demo:
     gr.HTML(dark_theme_css)
 
     gr.Markdown(
-        "## Phong Lee 0832 328262 - Công Cụ Làm Nét Ảnh"
+        "## Công Cụ Làm Nét Ảnh"
     )
     gr.Markdown(
-        "## Nhận Phục Hồi Ảnh Cũ - Chỉnh Sửa Ảnh Giá Rẻ"
+        "## Version 6x"
     )
 
     with gr.Row():
